@@ -1,0 +1,1 @@
+ALTER TABLE `weddings` ADD `themeColor` varchar(50);

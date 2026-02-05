@@ -1,0 +1,593 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { trpc } from "@/lib/trpc";
+import {
+  Heart,
+  ArrowLeft,
+  Loader2,
+  Users,
+  Gift,
+  MessageCircle,
+  CheckCircle,
+  XCircle,
+  Plus,
+  Trash2,
+  ExternalLink,
+  Sparkles,
+  Edit,
+} from "lucide-react";
+import { useState } from "react";
+import { Link, useRoute, useLocation } from "wouter";
+import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import ManageHeader from "@/components/ManageHeader";
+
+export default function ManageWedding() {
+  const { isAuthenticated } = useAuth();
+  const [, params] = useRoute("/manage/:slug");
+  const [, setLocation] = useLocation();
+  const slug = params?.slug || "";
+
+  const { data: wedding, isLoading, error } = trpc.wedding.getBySlug.useQuery({ slug });
+  
+  // Detect which blocks exist in AI invitation
+  const { data: blocks } = trpc.ai.detectBlocks.useQuery(
+    { slug },
+    { enabled: !!wedding }
+  );
+  
+  const { data: rsvps } = trpc.rsvp.list.useQuery(
+    { weddingId: wedding?.id || 0 },
+    { enabled: !!wedding && (blocks?.hasRsvp !== false) }
+  );
+  const { data: wishlist } = trpc.wishlist.list.useQuery(
+    { weddingId: wedding?.id || 0 },
+    { enabled: !!wedding && (blocks?.hasWishlist !== false) }
+  );
+  const { data: wishes } = trpc.wish.listAll.useQuery(
+    { weddingId: wedding?.id || 0 },
+    { enabled: !!wedding && (blocks?.hasWishes !== false) }
+  );
+  
+  // Check if this is an AI invitation
+  const isAI = (wedding as any)?.isAI;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Требуется авторизация</CardTitle>
+            <CardDescription>
+              Войдите в систему для управления приглашениями
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/">
+              <Button className="w-full">На главную</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error || !wedding) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Свадьба не найдена</CardTitle>
+            <CardDescription>
+              Приглашение с таким адресом не существует или было удалено
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard">
+              <Button className="w-full">Вернуться к списку</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-accent/20">
+      {/* Header */}
+      <ManageHeader wedding={wedding} />
+
+      {/* Main Content */}
+      <div className="container py-12">
+        <div className="mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+            Управление: {wedding.title}
+          </h1>
+          <p className="text-xl text-muted-foreground mb-6">
+            Просматривайте ответы гостей и управляйте контентом
+          </p>
+          <Link href={`/rsvp-dashboard/${wedding.id}`}>
+            <Button variant="outline" size="lg" className="w-full sm:w-auto">
+              <Users className="w-4 h-4 mr-2" />
+              RSVP Dashboard
+            </Button>
+          </Link>
+        </div>
+
+        {/* Dynamic tabs based on detected blocks */}
+        {(() => {
+          // Determine which tabs to show
+          const showRsvp = !isAI || blocks?.hasRsvp !== false;
+          const showWishlist = !isAI || blocks?.hasWishlist !== false;
+          const showWishes = !isAI || blocks?.hasWishes !== false;
+          
+          // Count visible tabs for grid
+          const visibleTabs = [showRsvp, showWishlist, showWishes].filter(Boolean).length;
+          
+          // Default tab
+          const defaultTab = showRsvp ? 'rsvps' : showWishes ? 'wishes' : 'wishlist';
+          
+          if (visibleTabs === 0) {
+            return (
+              <Card className="max-w-2xl mx-auto">
+                <CardContent className="py-8 text-center">
+                  <MessageCircle className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Нет активных форм</h3>
+                  <p className="text-muted-foreground">
+                    В этом AI-приглашении не обнаружены формы для сбора данных гостей.
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          }
+          
+          return (
+            <Tabs defaultValue={defaultTab} className="max-w-6xl mx-auto">
+              <TabsList className={`grid w-full grid-cols-${visibleTabs}`}>
+                {showRsvp && (
+                  <TabsTrigger value="rsvps">
+                    <Users className="w-4 h-4 mr-2" />
+                    RSVP ({rsvps?.length || 0})
+                  </TabsTrigger>
+                )}
+                {showWishlist && (
+                  <TabsTrigger value="wishlist">
+                    <Gift className="w-4 h-4 mr-2" />
+                    Wishlist ({wishlist?.length || 0})
+                  </TabsTrigger>
+                )}
+                {showWishes && (
+                  <TabsTrigger value="wishes">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Пожелания ({wishes?.length || 0})
+                  </TabsTrigger>
+                )}
+              </TabsList>
+
+              {showRsvp && (
+                <TabsContent value="rsvps">
+                  <RsvpsList rsvps={rsvps || []} />
+                </TabsContent>
+              )}
+
+              {showWishlist && (
+                <TabsContent value="wishlist">
+                  <WishlistManagement weddingId={wedding.id} wishlist={wishlist || []} />
+                </TabsContent>
+              )}
+
+              {showWishes && (
+                <TabsContent value="wishes">
+                  <WishesManagement weddingId={wedding.id} wishes={wishes || []} />
+                </TabsContent>
+              )}
+            </Tabs>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+function RsvpsList({ rsvps }: { rsvps: any[] }) {
+  if (rsvps.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Пока нет ответов от гостей</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const yesCount = rsvps.filter((r) => r.attending === "yes" || r.attending === "yes_plus_one" || r.attending === "yes_with_spouse").length;
+  const noCount = rsvps.filter((r) => r.attending === "no").length;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-green-600 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              Придут
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{yesCount}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-red-600 flex items-center gap-2">
+              <XCircle className="w-5 h-5" />
+              Не придут
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-4xl font-bold">{noCount}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Все ответы</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {rsvps.map((rsvp) => (
+              <div
+                key={rsvp.id}
+                className="flex items-center justify-between p-4 border border-border rounded-lg"
+              >
+                <div>
+                  <p className="font-semibold">{rsvp.name}</p>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    {rsvp.email && <p>Email: {rsvp.email}</p>}
+                    {rsvp.phone && <p>Телефон: {rsvp.phone}</p>}
+                  </div>
+                </div>
+                <div
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    rsvp.attending === "yes" || rsvp.attending === "yes_plus_one" || rsvp.attending === "yes_with_spouse"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {rsvp.attending === "yes" 
+                    ? "Приду" 
+                    : rsvp.attending === "yes_plus_one" 
+                    ? "Приду +1" 
+                    : rsvp.attending === "yes_with_spouse"
+                    ? "Приду + супруг(а)"
+                    : "Не приду"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function WishlistManagement({ weddingId, wishlist }: { weddingId: number; wishlist: any[] }) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    nameKz: "",
+    description: "",
+    descriptionKz: "",
+    link: "",
+  });
+
+  const utils = trpc.useUtils();
+
+  const addMutation = trpc.wishlist.add.useMutation({
+    onSuccess: () => {
+      toast.success("Подарок добавлен!");
+      utils.wishlist.list.invalidate();
+      setShowAddForm(false);
+      setFormData({ name: "", nameKz: "", description: "", descriptionKz: "", link: "" });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const deleteMutation = trpc.wishlist.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Подарок удалён");
+      utils.wishlist.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addMutation.mutate({ ...formData, weddingId });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Управление списком подарков</CardTitle>
+            <Button onClick={() => setShowAddForm(!showAddForm)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Добавить подарок
+            </Button>
+          </div>
+        </CardHeader>
+        {showAddForm && (
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Название (рус) *</Label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Название (каз)</Label>
+                  <Input
+                    value={formData.nameKz}
+                    onChange={(e) => setFormData({ ...formData, nameKz: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Описание (рус)</Label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Описание (каз)</Label>
+                  <Textarea
+                    value={formData.descriptionKz}
+                    onChange={(e) => setFormData({ ...formData, descriptionKz: e.target.value })}
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Ссылка на подарок *</Label>
+                <Input
+                  type="url"
+                  value={formData.link}
+                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                  placeholder="https://..."
+                  required
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button type="submit" disabled={addMutation.isPending}>
+                  {addMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Добавление...
+                    </>
+                  ) : (
+                    "Добавить"
+                  )}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowAddForm(false)}>
+                  Отмена
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        )}
+      </Card>
+
+      {wishlist.length === 0 ? (
+        <Card>
+          <CardContent className="py-16 text-center">
+            <Gift className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">Список подарков пуст</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {wishlist.map((item) => (
+            <Card key={item.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center gap-2">
+                      {item.name}
+                      {item.isReserved && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                          Зарезервировано
+                        </span>
+                      )}
+                    </CardTitle>
+                    {item.description && <CardDescription>{item.description}</CardDescription>}
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteMutation.mutate({ id: item.id, weddingId })}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:underline"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Открыть ссылку
+                </a>
+                {item.isReserved && (
+                  <div className="text-sm text-muted-foreground border-t pt-2">
+                    <p>
+                      <strong>Зарезервировал:</strong> {item.reservedBy}
+                    </p>
+                    {item.reservedEmail && (
+                      <p>
+                        <strong>Email:</strong> {item.reservedEmail}
+                      </p>
+                    )}
+                    {item.reservedPhone && (
+                      <p>
+                        <strong>Телефон:</strong> {item.reservedPhone}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WishesManagement({ weddingId, wishes }: { weddingId: number; wishes: any[] }) {
+  const utils = trpc.useUtils();
+
+  const approveMutation = trpc.wish.approve.useMutation({
+    onSuccess: () => {
+      toast.success("Пожелание одобрено");
+      utils.wish.listAll.invalidate();
+      utils.wish.listApproved.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const rejectMutation = trpc.wish.reject.useMutation({
+    onSuccess: () => {
+      toast.success("Пожелание отклонено");
+      utils.wish.listAll.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  if (wishes.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <MessageCircle className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Пока нет пожеланий от гостей</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const pending = wishes.filter((w) => !w.isApproved);
+  const approved = wishes.filter((w) => w.isApproved);
+
+  return (
+    <div className="space-y-6">
+      {pending.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>На модерации ({pending.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {pending.map((wish) => (
+              <div key={wish.id} className="border border-border rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="font-semibold">{wish.guestName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(wish.createdAt).toLocaleDateString("ru-RU")}
+                  </p>
+                </div>
+                <p className="text-foreground whitespace-pre-wrap">{wish.message}</p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => approveMutation.mutate({ id: wish.id, weddingId })}
+                    disabled={approveMutation.isPending}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Одобрить
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => rejectMutation.mutate({ id: wish.id, weddingId })}
+                    disabled={rejectMutation.isPending}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Отклонить
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {approved.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Одобренные ({approved.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {approved.map((wish) => (
+              <div key={wish.id} className="border border-border rounded-lg p-4 space-y-2">
+                <div>
+                  <p className="font-semibold">{wish.guestName}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(wish.createdAt).toLocaleDateString("ru-RU")}
+                  </p>
+                </div>
+                <p className="text-foreground whitespace-pre-wrap">{wish.message}</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => rejectMutation.mutate({ id: wish.id, weddingId })}
+                  disabled={rejectMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Удалить
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+

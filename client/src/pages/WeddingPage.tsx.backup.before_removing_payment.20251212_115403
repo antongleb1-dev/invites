@@ -1,0 +1,1142 @@
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { trpc } from "@/lib/trpc";
+import { Heart, Calendar, MapPin, Gift, MessageCircle, Loader2, ExternalLink, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useRoute } from "wouter";
+import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import GalleryCarousel from "@/components/GalleryCarousel";
+import TimelineBlock from "@/components/TimelineBlock";
+import MenuBlock from "@/components/MenuBlock";
+import DressCodeBlock from "@/components/DressCodeBlock";
+import CoordinatorBlock from "@/components/CoordinatorBlock";
+import QRCodeBlock from "@/components/QRCodeBlock";
+import BackgroundMusic from "@/components/BackgroundMusic";
+import PhotoShape, { PhotoShapeType } from "@/components/PhotoShape";
+import LocationInfoBlock from "@/components/LocationInfoBlock";
+import { getTemplate } from "@shared/templates";
+import { getContrastTextColor, isLightColor } from "@/lib/colorUtils";
+import {
+  GoldenKoshkar,
+  FloralPattern,
+  GeometricKazakh,
+  SilkRoadPattern,
+  NomadicSymbol,
+  KazakhBorderTop,
+  KazakhBorderBottom,
+} from "@/components/ornaments/KazakhOrnaments";
+
+export default function WeddingPage() {
+  const [, params] = useRoute("/:slug");
+  const slug = params?.slug || "";
+
+  const { data: wedding, isLoading } = trpc.wedding.getBySlug.useQuery({ slug });
+  const { data: wishlist } = trpc.wishlist.list.useQuery(
+    { weddingId: wedding?.id || 0 },
+    { enabled: !!wedding }
+  );
+  const { data: wishes } = trpc.wish.listApproved.useQuery(
+    { weddingId: wedding?.id || 0 },
+    { enabled: !!wedding }
+  );
+  const { data: gallery } = trpc.gallery.list.useQuery(
+    { weddingId: wedding?.id || 0 },
+    { enabled: !!wedding }
+  );
+
+  // Set dynamic meta tags for SEO
+  useEffect(() => {
+    if (wedding) {
+      const weddingTitle = `${wedding.title} | BookMe.kz`;
+      const weddingDescription = wedding.description 
+        ? wedding.description.substring(0, 160) 
+        : `Приглашение на свадьбу ${wedding.title}. ${wedding.date ? new Date(wedding.date).toLocaleDateString('ru-RU', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}`;
+      
+      document.title = weddingTitle;
+      
+      // Update or create meta description
+      let metaDescription = document.querySelector('meta[name="description"]');
+      if (!metaDescription) {
+        metaDescription = document.createElement('meta');
+        metaDescription.setAttribute('name', 'description');
+        document.head.appendChild(metaDescription);
+      }
+      metaDescription.setAttribute('content', weddingDescription);
+      
+      // Update Open Graph tags
+      const updateMetaTag = (property: string, content: string) => {
+        let meta = document.querySelector(`meta[property="${property}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', property);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+      };
+      
+      updateMetaTag('og:title', weddingTitle);
+      updateMetaTag('og:description', weddingDescription);
+      updateMetaTag('og:url', `https://bookme.kz/${wedding.slug}`);
+      if (wedding.backgroundImage) {
+        updateMetaTag('og:image', wedding.backgroundImage);
+      }
+    }
+  }, [wedding]);
+
+  const [language, setLanguage] = useState<"ru" | "kz">("ru");
+
+  // Get template configuration
+  const template = wedding ? getTemplate(wedding.templateId || 'classic') : getTemplate('classic');
+
+  // Render ornament based on template style
+  const renderOrnament = () => {
+    const ornamentClass = "absolute w-32 h-32 opacity-20";
+    switch (template.ornamentStyle) {
+      case 'golden':
+        return <GoldenKoshkar className={ornamentClass} color={template.colors.ornament} />;
+      case 'floral':
+        return <FloralPattern className={ornamentClass} color={template.colors.ornament} />;
+      case 'geometric':
+        return <GeometricKazakh className={ornamentClass} color={template.colors.ornament} />;
+      case 'silk':
+        return <SilkRoadPattern className={ornamentClass} color={template.colors.ornament} />;
+      case 'nomadic':
+        return <NomadicSymbol className={ornamentClass} color={template.colors.ornament} />;
+      case 'islamic':
+        return <GeometricKazakh className={ornamentClass} color={template.colors.ornament} />;
+      case 'starry':
+        return <FloralPattern className={ornamentClass} color={template.colors.ornament} />;
+      case 'cloud':
+        return <SilkRoadPattern className={ornamentClass} color={template.colors.ornament} />;
+      default:
+        return null;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!wedding) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Приглашение не найдено</CardTitle>
+            <CardDescription>
+              Проверьте правильность адреса
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Block public access until payment is completed
+  if (!wedding.isPaid && !slug.startsWith("demo-")) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Страница ещё не опубликована</CardTitle>
+            <CardDescription>
+              Эта страница будет доступна после оплаты
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Владелец приглашения должен оплатить 4990₸, чтобы страница стала доступна по ссылке.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const title = language === "kz" && wedding.titleKz ? wedding.titleKz : wedding.title;
+  const location = language === "kz" && wedding.locationKz ? wedding.locationKz : wedding.location;
+  const description = language === "kz" && wedding.descriptionKz ? wedding.descriptionKz : wedding.description;
+
+  // Apply template and custom styles
+  // Priority: Template colors can be overridden by custom colors
+  const isCustomTemplate = template.id !== 'classic';
+  // User customization always takes priority over template defaults
+  const effectivePrimaryColor = wedding.customColor || template.colors.primary;
+  const effectiveThemeColor = wedding.themeColor || template.colors.accent;
+  const effectiveButtonColor = wedding.buttonColor || effectiveThemeColor; // Button color with fallback to theme color
+  const effectiveFont = wedding.customFont || template.fonts.heading;
+  
+  // Calculate optimal text color based on background brightness
+  const autoTextColor = getContrastTextColor(template.colors.background);
+  const isLightBackground = isLightColor(template.colors.background);
+  
+  const templateStyles = {
+    '--template-primary': effectivePrimaryColor,
+    '--template-secondary': template.colors.secondary,
+    '--template-accent': effectiveThemeColor,
+    '--template-bg': template.colors.background,
+    '--template-text': autoTextColor, // Use calculated text color for optimal contrast
+    '--template-heading-font': template.fonts.heading,
+    '--template-body-font': template.fonts.body,
+    '--custom-font': effectiveFont,
+    '--custom-color': effectivePrimaryColor,
+  } as React.CSSProperties;
+
+  return (
+    <div 
+      className="min-h-screen relative"
+      style={{
+        ...templateStyles,
+        backgroundColor: template.colors.background,
+        color: autoTextColor, // Use calculated text color for optimal contrast
+        fontFamily: template.fonts.body,
+        minHeight: '100vh', // Ensure full viewport height coverage
+        ...((wedding.customBackgroundUrl || template.backgroundImage) && {
+          backgroundImage: `url(${wedding.customBackgroundUrl || template.backgroundImage})`,
+          backgroundRepeat: wedding.customBackgroundUrl ? 'no-repeat' : 'repeat',
+          backgroundSize: wedding.customBackgroundUrl ? 'cover' : '400px 400px',
+          backgroundPosition: wedding.customBackgroundUrl ? 'center' : 'top left',
+          backgroundAttachment: 'fixed', // Fixed background for full coverage
+        }),
+      }}
+    >
+      {/* Decorative ornaments */}
+      {template.ornamentStyle !== 'none' && (
+        <>
+          <div className="absolute top-10 left-10 opacity-10">
+            {renderOrnament()}
+          </div>
+          <div className="absolute top-10 right-10 opacity-10">
+            {renderOrnament()}
+          </div>
+          <div className="absolute bottom-10 left-10 opacity-10">
+            {renderOrnament()}
+          </div>
+          <div className="absolute bottom-10 right-10 opacity-10">
+            {renderOrnament()}
+          </div>
+        </>
+      )}
+      
+      {/* Decorative borders */}
+      {template.ornamentStyle !== 'none' && (
+        <>
+          <div className="absolute top-0 left-0 right-0">
+            <KazakhBorderTop color={template.colors.ornament} />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0">
+            <KazakhBorderBottom color={template.colors.ornament} />
+          </div>
+        </>
+      )}
+      {/* Hero Section */}
+      <section
+        className="relative min-h-[80vh] flex items-center justify-center"
+        style={{
+          background: true
+            ? `linear-gradient(135deg, ${effectiveThemeColor}15, ${effectiveThemeColor}05)`
+            : undefined,
+        }}
+      >
+        <div className="container relative z-10 py-20">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {/* Photo Side */}
+              {wedding.backgroundImage && (
+                <div className="flex justify-center">
+                  <PhotoShape
+                    imageUrl={wedding.backgroundImage}
+                    shape={(wedding.photoShape as PhotoShapeType) || "square"}
+                    themeColor={effectiveThemeColor}
+                    alt={title}
+                    className="w-full max-w-md aspect-square"
+                  />
+                </div>
+              )}
+              
+              {/* Content Side */}
+              <div className={`space-y-6 ${wedding.backgroundImage ? "text-center md:text-left" : "text-center md:col-span-2"}`}>
+            {/* Language Toggle */}
+            {(wedding.titleKz || wedding.locationKz || wedding.descriptionKz) && (
+              <div className="flex justify-center gap-2 mb-8">
+                <Button
+                  variant={language === "ru" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setLanguage("ru")}
+                  style={language === "ru" ? {
+                    backgroundColor: effectiveButtonColor,
+                    borderColor: effectiveButtonColor,
+                    color: wedding.buttonTextColor || "#FFFFFF",
+                  } : {}}
+                >
+                  Русский
+                </Button>
+                <Button
+                  variant={language === "kz" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setLanguage("kz")}
+                  style={language === "kz" ? {
+                    backgroundColor: effectiveButtonColor,
+                    borderColor: effectiveButtonColor,
+                    color: wedding.buttonTextColor || "#FFFFFF",
+                  } : {}}
+                >
+                  Қазақша
+                </Button>
+              </div>
+            )}
+
+            {wedding.showHeart !== false && (
+              <Heart 
+                className="w-16 h-16 mx-auto fill-current" 
+                style={effectiveThemeColor ? {
+                  color: effectiveThemeColor,
+                } : {}}
+              />
+            )}
+            
+            <h1
+              className="text-5xl md:text-7xl font-bold text-foreground"
+              style={{
+                fontFamily: effectiveFont ? effectiveFont : undefined,
+                color: effectivePrimaryColor ? effectivePrimaryColor : undefined,
+              }}
+            >
+              {title}
+            </h1>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center text-lg text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                {new Date(wedding.date).toLocaleDateString(language === "kz" ? "kk-KZ" : "ru-RU", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-5 h-5" />
+                  {location}
+                </div>
+                {wedding.mapUrl && (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    asChild
+                    style={effectiveButtonColor ? {
+                      backgroundColor: effectiveButtonColor,
+                      borderColor: effectiveButtonColor,
+                      color: wedding.buttonTextColor || "#FFFFFF",
+                    } : {
+                      backgroundColor: "#FFFFFF",
+                      color: "#000000",
+                    }}
+                  >
+                    <a href={wedding.mapUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      {language === "kz" ? "Картада ашу" : "Открыть на карте"}
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {description && (
+              <p
+                className="text-xl text-muted-foreground"
+                style={{
+                  fontFamily: effectiveFont ? effectiveFont : 'Lora',
+                }}
+              >
+                {description}
+              </p>
+            )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Love Story Section */}
+      {(wedding.loveStory || wedding.loveStoryKz) && (
+        <section 
+          className="py-16"
+          style={{
+            backgroundColor: effectiveThemeColor ? `${effectiveThemeColor}10` : undefined,
+          }}
+        >
+          <div className="container max-w-3xl">
+            <div className="p-8 rounded-lg" style={{
+              backgroundColor: 'rgba(250, 245, 235, 0.9)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+            }}>
+              <h2 
+                className="text-3xl md:text-4xl font-bold text-center mb-8"
+                style={{
+                  fontFamily: effectiveFont ? effectiveFont : undefined,
+                  color: effectivePrimaryColor ? effectivePrimaryColor : undefined,
+                }}
+              >
+                {language === "kz" ? "Біздің тарихымыз" : "Наша история"}
+              </h2>
+              <div className="prose prose-lg max-w-none text-foreground">
+                <p 
+                  className="whitespace-pre-wrap text-center"
+                  style={{
+                    fontFamily: effectiveFont ? effectiveFont : undefined,
+                  }}
+                >
+                  {language === "kz" && wedding.loveStoryKz ? wedding.loveStoryKz : wedding.loveStory}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Gallery Section */}
+      {gallery && gallery.length > 0 && (
+        <GalleryCarousel 
+          gallery={gallery} 
+          language={language} 
+          customFont={effectiveFont ? effectiveFont : undefined}
+          customColor={effectivePrimaryColor ? effectivePrimaryColor : undefined}
+          themeColor={effectiveThemeColor ? effectiveThemeColor : undefined}
+        />
+      )}
+
+      {/* Video Section */}
+      {wedding.videoUrl && (
+        <section 
+          className="py-16"
+          style={{
+            backgroundColor: effectiveThemeColor ? `${effectiveThemeColor}10` : undefined,
+          }}
+        >
+          <div className="container max-w-4xl">
+            <h2 
+              className="text-3xl md:text-4xl font-bold text-center mb-8"
+              style={{
+                fontFamily: effectiveFont ? effectiveFont : undefined,
+                color: effectivePrimaryColor ? effectivePrimaryColor : undefined,
+              }}
+            >
+              {language === "kz" ? "Біздің видео" : "Наше видео"}
+            </h2>
+            <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
+              {wedding.videoUrl.includes('youtube.com') || wedding.videoUrl.includes('youtu.be') ? (
+                <iframe
+                  src={wedding.videoUrl.replace('watch?v=', 'embed/')}
+                  className="w-full h-full"
+                  allowFullScreen
+                />
+              ) : (
+                <video src={wedding.videoUrl} controls className="w-full h-full" />
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Timeline/Program Section */}
+      {wedding.showTimeline && wedding.timelineData && (
+        <TimelineBlock
+          timelineData={wedding.timelineData}
+          language={language}
+          customFont={effectiveFont || undefined}
+          customColor={effectivePrimaryColor || undefined}
+          themeColor={effectiveThemeColor || undefined}
+        />
+      )}
+
+      {/* Menu Section */}
+      {wedding.showMenu && wedding.menuData && (
+        <MenuBlock
+          menuData={wedding.menuData}
+          language={language}
+          customFont={effectiveFont || undefined}
+          customColor={effectivePrimaryColor || undefined}
+          themeColor={effectiveThemeColor || undefined}
+        />
+      )}
+
+      {/* Dress Code Section */}
+      {wedding.showDressCode && (wedding.dressCode || wedding.dressCodeKz) && (
+        <DressCodeBlock
+          dressCode={wedding.dressCode || ""}
+          dressCodeKz={wedding.dressCodeKz || undefined}
+          language={language}
+          customFont={effectiveFont || undefined}
+          customColor={effectivePrimaryColor || undefined}
+          themeColor={effectiveThemeColor || undefined}
+        />
+      )}
+
+      {/* Coordinator Contacts Section */}
+      {wedding.showCoordinator && (wedding.coordinatorName || wedding.coordinatorPhone || wedding.coordinatorEmail) && (
+        <CoordinatorBlock
+          coordinatorName={wedding.coordinatorName || undefined}
+          coordinatorPhone={wedding.coordinatorPhone || undefined}
+          coordinatorEmail={wedding.coordinatorEmail || undefined}
+          language={language}
+          customFont={effectiveFont || undefined}
+          customColor={effectivePrimaryColor || undefined}
+          themeColor={effectiveThemeColor || undefined}
+        />
+      )}
+
+      {/* QR Code Section */}
+      {wedding.showQrCode && wedding.qrCodeData && (
+        <QRCodeBlock
+          qrCodeData={wedding.qrCodeData}
+          language={language}
+          customFont={effectiveFont || undefined}
+          customColor={effectivePrimaryColor || undefined}
+          themeColor={effectiveThemeColor || undefined}
+        />
+      )}
+
+      {/* Location Details Section */}
+      {wedding.showLocationDetails && (wedding.locationDetails || wedding.locationDetailsKz) && (
+        <LocationInfoBlock
+          locationDetails={wedding.locationDetails || undefined}
+          locationDetailsKz={wedding.locationDetailsKz || undefined}
+          language={language}
+          customFont={effectiveFont || undefined}
+          customColor={effectivePrimaryColor || undefined}
+          themeColor={effectiveThemeColor || undefined}
+        />
+      )}
+
+      {/* Main Content */}
+      <section 
+        className="py-16"
+        style={{
+          backgroundColor: effectiveThemeColor ? `${effectiveThemeColor}10` : undefined,
+        }}
+      >
+        <div className="container max-w-4xl">
+          <div className="p-8 rounded-lg" style={{
+            backgroundColor: 'rgba(250, 245, 235, 0.9)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}>
+            <div style={effectiveThemeColor ? {
+              // @ts-ignore
+              '--theme-color': effectiveThemeColor,
+            } : {}}>
+              <Tabs defaultValue="rsvp" className="w-full">
+                <TabsList 
+                  className="grid w-full grid-cols-3"
+                  style={{
+                    backgroundColor: effectiveThemeColor ? effectiveThemeColor : undefined,
+                  }}
+                >
+                  <TabsTrigger 
+                    value="rsvp"
+                    style={effectiveThemeColor ? {
+                      // @ts-ignore
+                      '--tabs-trigger-active-bg': effectiveThemeColor,
+                      '--tabs-trigger-active-text': wedding.buttonTextColor || '#FFFFFF',
+                    } : {}}
+                    className="data-[state=active]:bg-[var(--tabs-trigger-active-bg)] data-[state=active]:text-[var(--tabs-trigger-active-text)]"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    RSVP
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="wishlist"
+                    style={effectiveThemeColor ? {
+                      // @ts-ignore
+                      '--tabs-trigger-active-bg': effectiveThemeColor,
+                      '--tabs-trigger-active-text': wedding.buttonTextColor || '#FFFFFF',
+                    } : {}}
+                    className="data-[state=active]:bg-[var(--tabs-trigger-active-bg)] data-[state=active]:text-[var(--tabs-trigger-active-text)]"
+                  >
+                    <Gift className="w-4 h-4 mr-2" />
+                    {language === "kz" ? "Сыйлықтар" : "Подарки"}
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="wishes"
+                    style={effectiveThemeColor ? {
+                      // @ts-ignore
+                      '--tabs-trigger-active-bg': effectiveThemeColor,
+                      '--tabs-trigger-active-text': wedding.buttonTextColor || '#FFFFFF',
+                    } : {}}
+                    className="data-[state=active]:bg-[var(--tabs-trigger-active-bg)] data-[state=active]:text-[var(--tabs-trigger-active-text)]"
+                  >
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    {language === "kz" ? "Тілектер" : "Пожелания"}
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="rsvp">
+                  <RsvpForm 
+              weddingId={wedding.id} 
+              language={language}
+              customFont={effectiveFont ? effectiveFont : undefined}
+              customColor={effectivePrimaryColor ? effectivePrimaryColor : undefined}
+              themeColor={effectiveThemeColor ? effectiveThemeColor : undefined}
+              buttonColor={effectiveButtonColor ? effectiveButtonColor : undefined}
+              buttonTextColor={wedding.buttonTextColor ? wedding.buttonTextColor : undefined}
+                  />
+                </TabsContent>
+
+                <TabsContent value="wishlist">
+                  <WishlistSection 
+              wishlist={wishlist || []} 
+              language={language}
+              customFont={effectiveFont ? effectiveFont : undefined}
+              customColor={effectivePrimaryColor ? effectivePrimaryColor : undefined}
+              themeColor={effectiveThemeColor ? effectiveThemeColor : undefined}
+              buttonColor={effectiveButtonColor ? effectiveButtonColor : undefined}
+              buttonTextColor={wedding.buttonTextColor ? wedding.buttonTextColor : undefined}
+                  />
+                </TabsContent>
+
+                <TabsContent value="wishes">
+                  <WishesSection 
+              weddingId={wedding.id} 
+              wishes={wishes || []} 
+              language={language}
+              customFont={effectiveFont ? effectiveFont : undefined}
+              customColor={effectivePrimaryColor ? effectivePrimaryColor : undefined}
+              themeColor={effectiveThemeColor ? effectiveThemeColor : undefined}
+              buttonColor={effectiveButtonColor ? effectiveButtonColor : undefined}
+              buttonTextColor={wedding.buttonTextColor ? wedding.buttonTextColor : undefined}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Background Music Player */}
+      {wedding.musicUrl && (
+        <BackgroundMusic 
+          musicUrl={wedding.musicUrl} 
+          autoplay={true}
+          themeColor={effectiveThemeColor || undefined}
+        />
+      )}
+    </div>
+  );
+}
+
+function RsvpForm({ weddingId, language, customFont, customColor, themeColor, buttonColor, buttonTextColor }: { weddingId: number; language: "ru" | "kz"; customFont?: string; customColor?: string; themeColor?: string; buttonColor?: string; buttonTextColor?: string }) {
+  const effectiveButtonColor = buttonColor || themeColor;
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    attending: "yes" as "yes" | "no" | "yes_plus_one" | "yes_with_spouse",
+    guestCount: 1,
+    dietaryRestrictions: "",
+    needsParking: false,
+    needsTransfer: false,
+  });
+
+  const submitMutation = trpc.rsvp.submit.useMutation({
+    onSuccess: () => {
+      toast.success(language === "kz" ? "Рахмет! Жауабыңыз қабылданды" : "Спасибо! Ваш ответ принят");
+      setFormData({ name: "", phone: "", attending: "yes", guestCount: 1, dietaryRestrictions: "", needsParking: false, needsTransfer: false });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitMutation.mutate({ ...formData, weddingId });
+  };
+
+  return (
+    <Card style={{
+      backgroundColor: themeColor ? `${themeColor}08` : undefined,
+      borderColor: themeColor ? `${themeColor}30` : undefined,
+    }}>
+      <CardHeader>
+        <CardTitle style={{ fontFamily: customFont, color: customColor }}>{language === "kz" ? "Қатысуды растау" : "Подтвердите присутствие"}</CardTitle>
+        <CardDescription>
+          {language === "kz"
+            ? "Біз сіздің келетініңізді білгіміз келеді"
+            : "Нам важно знать, что вы придёте"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">{language === "kz" ? "Аты-жөніңіз" : "Ваше имя"} *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              style={themeColor ? {
+                // @ts-ignore
+                '--input-focus-ring': themeColor,
+              } : {}}
+              className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">{language === "kz" ? "Телефон" : "Телефон"}</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              style={themeColor ? {
+                // @ts-ignore
+                '--input-focus-ring': themeColor,
+              } : {}}
+              className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>{language === "kz" ? "Келесіз бе?" : "Вы придёте?"} *</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={formData.attending === "yes" ? "default" : "outline"}
+                onClick={() => setFormData({ ...formData, attending: "yes", guestCount: 1 })}
+                style={formData.attending === "yes" && effectiveButtonColor ? {
+                  backgroundColor: effectiveButtonColor,
+                  borderColor: effectiveButtonColor,
+                  color: buttonTextColor || "#FFFFFF",
+                } : {}}
+              >
+                {language === "kz" ? "Келемін" : "Приду"}
+              </Button>
+              <Button
+                type="button"
+                variant={formData.attending === "yes_with_spouse" ? "default" : "outline"}
+                onClick={() => setFormData({ ...formData, attending: "yes_with_spouse", guestCount: 2 })}
+                style={formData.attending === "yes_with_spouse" && effectiveButtonColor ? {
+                  backgroundColor: effectiveButtonColor,
+                  borderColor: effectiveButtonColor,
+                  color: buttonTextColor || "#FFFFFF",
+                } : {}}
+              >
+                {language === "kz" ? "Жұбаймен келемін" : "Приду + супруг/а"}
+              </Button>
+              <Button
+                type="button"
+                variant={formData.attending === "yes_plus_one" ? "default" : "outline"}
+                onClick={() => setFormData({ ...formData, attending: "yes_plus_one", guestCount: 2 })}
+                style={formData.attending === "yes_plus_one" && effectiveButtonColor ? {
+                  backgroundColor: effectiveButtonColor,
+                  borderColor: effectiveButtonColor,
+                  color: buttonTextColor || "#FFFFFF",
+                } : {}}
+              >
+                {language === "kz" ? "Келемін +1" : "Приду +1"}
+              </Button>
+              <Button
+                type="button"
+                variant={formData.attending === "no" ? "default" : "outline"}
+                onClick={() => setFormData({ ...formData, attending: "no", guestCount: 0 })}
+                style={formData.attending === "no" && effectiveButtonColor ? {
+                  backgroundColor: effectiveButtonColor,
+                  borderColor: effectiveButtonColor,
+                  color: buttonTextColor || "#FFFFFF",
+                } : {}}
+              >
+                {language === "kz" ? "Келе алмаймын" : "Не приду"}
+              </Button>
+            </div>
+          </div>
+
+          {formData.attending !== "no" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="dietary">{language === "kz" ? "Тағам шектеулері немесе аллергия" : "Особенности питания или аллергии"}</Label>
+                <Input
+                  id="dietary"
+                  value={formData.dietaryRestrictions}
+                  onChange={(e) => setFormData({ ...formData, dietaryRestrictions: e.target.value })}
+                  placeholder={language === "kz" ? "Мысалы: вегетариан, лактоза аллергиясы" : "Например: вегетарианец, аллергия на лактозу"}
+                  style={themeColor ? {
+                    // @ts-ignore
+                    '--input-focus-ring': themeColor,
+                  } : {}}
+                  className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="parking"
+                  checked={formData.needsParking}
+                  onChange={(e) => setFormData({ ...formData, needsParking: e.target.checked })}
+                  className="rounded"
+                  style={themeColor ? {
+                    accentColor: themeColor,
+                  } : {}}
+                />
+                <Label htmlFor="parking" className="font-normal cursor-pointer">
+                  {language === "kz" ? "Тұрақ қажет" : "Нужна парковка"}
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="transfer"
+                  checked={formData.needsTransfer}
+                  onChange={(e) => setFormData({ ...formData, needsTransfer: e.target.checked })}
+                  className="rounded"
+                  style={themeColor ? {
+                    accentColor: themeColor,
+                  } : {}}
+                />
+                <Label htmlFor="transfer" className="font-normal cursor-pointer">
+                  {language === "kz" ? "Трансфер қажет" : "Нужен трансфер"}
+                </Label>
+              </div>
+            </>
+          )}
+
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={submitMutation.isPending}
+            style={effectiveButtonColor ? {
+              backgroundColor: effectiveButtonColor,
+              borderColor: effectiveButtonColor,
+              color: buttonTextColor || "#FFFFFF",
+            } : {}}
+          >
+            {submitMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {language === "kz" ? "Жіберілуде..." : "Отправка..."}
+              </>
+            ) : (
+              <>{language === "kz" ? "Жіберу" : "Отправить"}</>
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function WishlistSection({ wishlist, language, customFont, customColor, themeColor, buttonColor, buttonTextColor }: { wishlist: any[]; language: "ru" | "kz"; customFont?: string; customColor?: string; themeColor?: string; buttonColor?: string; buttonTextColor?: string }) {
+  const effectiveButtonColor = buttonColor || themeColor;
+  const [reserveId, setReserveId] = useState<number | null>(null);
+  const [reserveData, setReserveData] = useState({
+    reservedBy: "",
+    reservedEmail: "",
+    reservedPhone: "",
+  });
+
+  const utils = trpc.useUtils();
+  const reserveMutation = trpc.wishlist.reserve.useMutation({
+    onSuccess: () => {
+      toast.success(language === "kz" ? "Сыйлық брондалды!" : "Подарок зарезервирован!");
+      utils.wishlist.list.invalidate();
+      setReserveId(null);
+      setReserveData({ reservedBy: "", reservedEmail: "", reservedPhone: "" });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleReserve = (id: number) => {
+    if (!reserveData.reservedBy || !reserveData.reservedEmail) {
+      toast.error(language === "kz" ? "Атыңыз бен email-ді толтырыңыз" : "Заполните имя и email");
+      return;
+    }
+    reserveMutation.mutate({ id, ...reserveData });
+  };
+
+  if (wishlist.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <Gift className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">
+            {language === "kz" ? "Сыйлықтар тізімі әзірге жоқ" : "Список подарков пока пуст"}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {wishlist.map((item) => {
+        const name = language === "kz" && item.nameKz ? item.nameKz : item.name;
+        const description = language === "kz" && item.descriptionKz ? item.descriptionKz : item.description;
+
+        return (
+          <Card 
+            key={item.id}
+            style={{
+              backgroundColor: themeColor ? `${themeColor}08` : undefined,
+              borderColor: themeColor ? `${themeColor}30` : undefined,
+            }}
+          >
+            <CardHeader>
+              <CardTitle className="flex items-start justify-between gap-2">
+                <span style={{ fontFamily: customFont, color: customColor }}>{name}</span>
+                {item.isReserved && (
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full whitespace-nowrap flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    {language === "kz" ? "Брондалған" : "Зарезервировано"}
+                  </span>
+                )}
+              </CardTitle>
+              {description && <CardDescription>{description}</CardDescription>}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 hover:underline"
+                style={{
+                  color: themeColor || undefined,
+                }}
+              >
+                <ExternalLink className="w-4 h-4" />
+                {language === "kz" ? "Сілтемені ашу" : "Открыть ссылку"}
+              </a>
+
+              {!item.isReserved && (
+                <>
+                  {reserveId === item.id ? (
+                    <div className="space-y-3 pt-3 border-t">
+                      <Input
+                        placeholder={language === "kz" ? "Атыңыз" : "Ваше имя"}
+                        value={reserveData.reservedBy}
+                        onChange={(e) =>
+                          setReserveData({ ...reserveData, reservedBy: e.target.value })
+                        }
+                        style={themeColor ? {
+                          // @ts-ignore
+                          '--input-focus-ring': themeColor,
+                        } : {}}
+                        className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+                      />
+                      <Input
+                        type="email"
+                        placeholder="Email"
+                        value={reserveData.reservedEmail}
+                        onChange={(e) =>
+                          setReserveData({ ...reserveData, reservedEmail: e.target.value })
+                        }
+                        style={themeColor ? {
+                          // @ts-ignore
+                          '--input-focus-ring': themeColor,
+                        } : {}}
+                        className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+                      />
+                      <Input
+                        type="tel"
+                        placeholder={language === "kz" ? "Телефон" : "Телефон"}
+                        value={reserveData.reservedPhone}
+                        onChange={(e) =>
+                          setReserveData({ ...reserveData, reservedPhone: e.target.value })
+                        }
+                        style={themeColor ? {
+                          // @ts-ignore
+                          '--input-focus-ring': themeColor,
+                        } : {}}
+                        className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleReserve(item.id)}
+                          disabled={reserveMutation.isPending}
+                          className="flex-1"
+                        >
+                          {reserveMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : language === "kz" ? (
+                            "Растау"
+                          ) : (
+                            "Подтвердить"
+                          )}
+                        </Button>
+                        <Button variant="outline" onClick={() => setReserveId(null)}>
+                          {language === "kz" ? "Болдырмау" : "Отмена"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={() => setReserveId(item.id)} 
+                      className="w-full"
+                      style={effectiveButtonColor ? {
+                        backgroundColor: effectiveButtonColor,
+                        borderColor: effectiveButtonColor,
+                        color: buttonTextColor || "#FFFFFF",
+                      } : {}}
+                    >
+                      <Gift className="w-4 h-4 mr-2" />
+                      {language === "kz" ? "Брондау" : "Зарезервировать"}
+                    </Button>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function WishesSection({ weddingId, wishes, language, customFont, customColor, themeColor, buttonColor, buttonTextColor }: { weddingId: number; wishes: any[]; language: "ru" | "kz"; customFont?: string; customColor?: string; themeColor?: string; buttonColor?: string; buttonTextColor?: string }) {
+  const effectiveButtonColor = buttonColor || themeColor;
+  const [formData, setFormData] = useState({
+    guestName: "",
+    message: "",
+  });
+
+  const utils = trpc.useUtils();
+  const submitMutation = trpc.wish.submit.useMutation({
+    onSuccess: () => {
+      toast.success(
+        language === "kz"
+          ? "Рахмет! Тілегіңіз модерациядан өткеннен кейін көрсетіледі"
+          : "Спасибо! Ваше пожелание появится после модерации"
+      );
+      setFormData({ guestName: "", message: "" });
+      utils.wish.listApproved.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitMutation.mutate({ ...formData, weddingId });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card style={{
+        backgroundColor: themeColor ? `${themeColor}08` : undefined,
+        borderColor: themeColor ? `${themeColor}30` : undefined,
+      }}>
+        <CardHeader>
+          <CardTitle style={{ color: customColor }}>{language === "kz" ? "Тілек қалдыру" : "Оставить пожелание"}</CardTitle>
+          <CardDescription>
+            {language === "kz"
+              ? "Жас жұбайларға жылы сөздер жазыңыз"
+              : "Напишите тёплые слова молодожёнам"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="guestName">{language === "kz" ? "Атыңыз" : "Ваше имя"} *</Label>
+              <Input
+                id="guestName"
+                value={formData.guestName}
+                onChange={(e) => setFormData({ ...formData, guestName: e.target.value })}
+                required
+                style={themeColor ? {
+                  // @ts-ignore
+                  '--input-focus-ring': themeColor,
+                } : {}}
+                className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="message">{language === "kz" ? "Тілек" : "Пожелание"} *</Label>
+              <Textarea
+                id="message"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                rows={4}
+                required
+                style={themeColor ? {
+                  // @ts-ignore
+                  '--input-focus-ring': themeColor,
+                } : {}}
+                className="focus-visible:ring-2 focus-visible:ring-[var(--input-focus-ring)] focus-visible:ring-offset-0"
+              />
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={submitMutation.isPending}
+              style={effectiveButtonColor ? {
+                backgroundColor: effectiveButtonColor,
+                borderColor: effectiveButtonColor,
+                color: buttonTextColor || "#FFFFFF",
+              } : {}}
+            >
+              {submitMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {language === "kz" ? "Жіберілуде..." : "Отправка..."}
+                </>
+              ) : (
+                <>{language === "kz" ? "Жіберу" : "Отправить"}</>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {wishes.length > 0 && (
+        <div className="space-y-4">
+          <h3 
+            className="text-2xl font-bold"
+            style={{
+              fontFamily: customFont,
+              color: customColor,
+            }}
+          >
+            {language === "kz" ? "Тілектер" : "Пожелания гостей"}
+          </h3>
+          {wishes.map((wish) => (
+            <Card 
+              key={wish.id}
+              style={{
+                backgroundColor: themeColor ? `${themeColor}08` : undefined,
+                borderColor: themeColor ? `${themeColor}30` : undefined,
+              }}
+            >
+              <CardHeader>
+                <CardTitle className="text-lg" style={{ color: customColor }}>{wish.guestName}</CardTitle>
+                <CardDescription>
+                  {new Date(wish.createdAt).toLocaleDateString(language === "kz" ? "kk-KZ" : "ru-RU")}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-foreground whitespace-pre-wrap">{wish.message}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+

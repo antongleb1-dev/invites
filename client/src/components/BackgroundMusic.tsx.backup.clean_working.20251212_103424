@@ -1,0 +1,272 @@
+import { useEffect, useRef, useState } from "react";
+import { Button } from "./ui/button";
+import { Volume2, VolumeX, Play, Pause } from "lucide-react";
+import { toast } from "sonner";
+
+interface BackgroundMusicProps {
+  musicUrl: string;
+  autoplay?: boolean;
+  themeColor?: string;
+}
+
+// Helper function to extract YouTube video ID
+const getYouTubeVideoId = (url: string): string | null => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
+    /youtube\.com\/embed\/([^&\s]+)/,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  
+  return null;
+};
+
+export default function BackgroundMusic({ musicUrl, autoplay = false, themeColor }: BackgroundMusicProps) {
+  console.log("🎵 BackgroundMusic loaded:", { musicUrl, autoplay, isNewTab: !document.referrer });
+  // Проверяем autoplay policy
+  navigator.permissions?.query({name: "autoplay" as any}).then(result => {
+    console.log("🔒 Browser autoplay policy:", result.state);
+  }).catch(() => console.log("🔒 Autoplay policy check not supported"));
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const playerRef = useRef<any>(null);
+  const isMounted = useRef(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [isYouTube, setIsYouTube] = useState(false);
+  const [youtubeReady, setYoutubeReady] = useState(false);
+
+  const youtubeVideoId = getYouTubeVideoId(musicUrl);
+
+  useEffect(() => {
+    setIsYouTube(!!youtubeVideoId);
+  }, [musicUrl, youtubeVideoId]);
+
+  // Load YouTube IFrame API
+  useEffect(() => {
+    if (!isYouTube) return;
+
+    // Check if API is already loaded
+    if ((window as any).YT && (window as any).YT.Player) {
+      if (isMounted.current) setYoutubeReady(true);
+      return;
+    }
+
+    // Load YouTube IFrame API
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+    // Set up callback for when API is ready
+    (window as any).onYouTubeIframeAPIReady = () => {
+      if (isMounted.current) setYoutubeReady(true);
+    };
+    
+    // ✅ Cleanup function to prevent DOM operations after unmounting
+    return () => {
+      // Remove the callback to prevent it from running after unmounting
+      (window as any).onYouTubeIframeAPIReady = null;
+    };
+  }, [isYouTube]);
+
+  // Initialize YouTube player
+  useEffect(() => {
+    if (!isYouTube || !youtubeReady || !youtubeVideoId) return;
+
+    playerRef.current = new (window as any).YT.Player('youtube-player', {
+      height: '0',
+      width: '0',
+      videoId: youtubeVideoId,
+      playerVars: {
+        autoplay: autoplay ? 1 : 0,
+        controls: 0,
+        loop: 1,
+        playlist: youtubeVideoId, // Required for looping
+      },
+      events: {
+        onReady: (event: any) => {
+          console.log("🎬 YouTube player ready, autoplay =", autoplay);
+          // Проверяем возможность autoplay
+          const canAutoplay = document.hasFocus() && !document.hidden;
+          console.log("📊 Autoplay conditions:", { canAutoplay, hasFocus: document.hasFocus(), isHidden: document.hidden, userAgent: navigator.userAgent.includes("Chrome") ? "Chrome" : "Other" });
+          if (autoplay) {
+            event.target.playVideo();
+            // Проверяем результат после попытки autoplay
+            setTimeout(() => {
+              const currentState = event.target.getPlayerState();
+              console.log("⏱️ Autoplay result after 2s:", { state: currentState, playing: currentState === 1, blocked: currentState !== 1 });
+              if (currentState !== 1) {
+                console.log("🚫 AUTOPLAY BLOCKED - User interaction required");
+              } else {
+                console.log("✅ AUTOPLAY SUCCESS - Music playing automatically");
+              }
+            }, 2000);
+            console.log("▶️ Attempting autoplay...");
+            setIsPlaying(true);
+            console.log("✅ playVideo() called, setIsPlaying(true)");
+          }
+        },
+        onStateChange: (event: any) => {
+          const state = event.data;
+          // 1 = playing, 2 = paused
+          setIsPlaying(state === 1);
+        },
+        onError: () => {
+          toast.error("Не удалось загрузить музыку");
+        },
+      },
+    });
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+      }
+    };
+  }, [isYouTube, youtubeReady, youtubeVideoId, autoplay]);
+
+  // Handle regular audio (non-YouTube)
+  useEffect(() => {
+    if (isYouTube) return;
+    
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Set volume to 50% by default
+    audio.volume = 0.5;
+
+    // Handle audio events
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleError = () => {
+      toast.error("Не удалось загрузить музыку");
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("error", handleError);
+
+    return () => {
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("error", handleError);
+    };
+  }, [isYouTube]);
+
+  // Autoplay for regular audio
+  useEffect(() => {
+    if (isYouTube) return;
+    
+    const audio = audioRef.current;
+    if (!audio || !hasInteracted) return;
+
+    if (autoplay && !isPlaying) {
+      audio.play().catch(() => {
+        // Autoplay blocked by browser - user needs to interact first
+      });
+    }
+  
+  // ✅ Main cleanup useEffect
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  }, [autoplay, hasInteracted, isPlaying, isYouTube]);
+
+  const togglePlay = () => {
+    setHasInteracted(true);
+    
+    if (isYouTube && playerRef.current) {
+      if (isPlaying) {
+        playerRef.current.pauseVideo();
+      } else {
+        playerRef.current.playVideo();
+      }
+    } else {
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        audio.play().catch(() => {
+          toast.error("Не удалось воспроизвести музыку");
+        });
+      }
+    }
+  };
+
+  const toggleMute = () => {
+    if (isYouTube && playerRef.current) {
+      if (isMuted) {
+        playerRef.current.unMute();
+      } else {
+        playerRef.current.mute();
+      }
+      setIsMuted(!isMuted);
+    } else {
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      audio.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  if (!musicUrl) return null;
+
+  return (
+    <>
+      {isYouTube && <div id="youtube-player" style={{ display: 'none' }} />}
+      
+      <div className="fixed bottom-6 right-6 z-50">
+        {!isYouTube && <audio ref={audioRef} src={musicUrl} loop />}
+        
+        <div 
+          className="flex items-center gap-2 bg-background/95 backdrop-blur-sm border rounded-full px-4 py-3 shadow-lg"
+          style={themeColor ? {
+            borderColor: themeColor,
+          } : {}}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={togglePlay}
+            style={themeColor ? {
+              color: themeColor,
+            } : {}}
+          >
+            {isPlaying ? (
+              <Pause className="w-4 h-4" />
+            ) : (
+              <Play className="w-4 h-4" />
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full"
+            onClick={toggleMute}
+            style={themeColor ? {
+              color: themeColor,
+            } : {}}
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4" />
+            ) : (
+              <Volume2 className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+

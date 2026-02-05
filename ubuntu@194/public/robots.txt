@@ -1,0 +1,37 @@
+# BookMe.kz - Онлайн-приглашения на любое событие
+# https://bookme.kz
+
+User-agent: *
+
+# Разрешить: главная, публичные приглашения, SEO-страницы
+Allow: /
+Allow: /blog
+Allow: /blog/*
+Allow: /online-invitation/*
+Allow: /features
+Allow: /terms
+Allow: /privacy
+
+# Запретить: закрытые разделы
+Disallow: /dashboard
+Disallow: /create
+Disallow: /create-ai
+Disallow: /edit/*
+Disallow: /edit-ai/*
+Disallow: /manage/*
+Disallow: /manage-ai/*
+Disallow: /admin
+Disallow: /upgrade/*
+Disallow: /premium-blocks/*
+Disallow: /premium-dashboard/*
+Disallow: /edit-premium/*
+Disallow: /rsvp-dashboard/*
+Disallow: /select-template/*
+Disallow: /payment/*
+Disallow: /api/*
+
+# Sitemap
+Sitemap: https://bookme.kz/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1

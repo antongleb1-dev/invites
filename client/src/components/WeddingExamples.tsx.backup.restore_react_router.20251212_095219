@@ -1,0 +1,200 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Heart, Calendar, MapPin, ExternalLink } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+const examples = [
+  {
+    id: 1,
+    slug: 'demo-aigerim-nurlan',
+    names: { ru: "Айгерім & Нұрлан", kk: "Айгерім & Нұрлан" },
+    date: "15.08.2024",
+    location: { ru: "Алматы", kk: "Алматы" },
+    theme: { ru: "Казахские орнаменты", kk: "Қазақ ою-өрнектері" },
+    description: { 
+      ru: "Элегантное приглашение с традиционными казахскими узорами и золотыми акцентами",
+      kk: "Дәстүрлі қазақ ою-өрнектері мен алтын акценттері бар талғампаз шақыру"
+    },
+    color: "from-amber-500/20 to-yellow-500/20",
+    borderColor: "border-amber-500/30"
+  },
+  {
+    id: 2,
+    slug: 'demo-anna-dmitry',
+    names: { ru: "Анна & Дмитрий", kk: "Анна & Дмитрий" },
+    date: "22.09.2024",
+    location: { ru: "Астана", kk: "Астана" },
+    theme: { ru: "Современная классика", kk: "Заманауи классика" },
+    description: { 
+      ru: "Минималистичный дизайн с акцентом на фотографии и чистые линии",
+      kk: "Фотосуреттер мен таза сызықтарға баса назар аударатын минималистік дизайн"
+    },
+    color: "from-slate-500/20 to-gray-500/20",
+    borderColor: "border-slate-500/30"
+  },
+  {
+    id: 3,
+    slug: 'demo-asel-erlan',
+    names: { ru: "Асель & Ерлан", kk: "Әсел & Ерлан" },
+    date: "10.10.2024",
+    location: { ru: "Шымкент", kk: "Шымкент" },
+    theme: { ru: "Романтика в розовых тонах", kk: "Қызғылт түстердегі романтика" },
+    description: { 
+      ru: "Нежное приглашение с цветочными мотивами и пастельными оттенками",
+      kk: "Гүл мотивтері мен пастель реңктері бар нәзік шақыру"
+    },
+    color: "from-pink-500/20 to-rose-500/20",
+    borderColor: "border-pink-500/30"
+  },
+  {
+    id: 4,
+    slug: null, // No demo page
+    names: { ru: "Мария & Александр", kk: "Мария & Александр" },
+    date: "05.11.2024",
+    location: { ru: "Караганда", kk: "Қарағанды" },
+    theme: { ru: "Винтажный стиль", kk: "Винтаж стилі" },
+    description: { 
+      ru: "Ретро-дизайн с элементами старинных открыток и каллиграфией",
+      kk: "Ескі ашықхаттар элементтері мен каллиграфиясы бар ретро-дизайн"
+    },
+    color: "from-emerald-500/20 to-teal-500/20",
+    borderColor: "border-emerald-500/30"
+  },
+  {
+    id: 5,
+    slug: null, // No demo page
+    names: { ru: "Дана & Арман", kk: "Дана & Арман" },
+    date: "18.12.2024",
+    location: { ru: "Актобе", kk: "Ақтөбе" },
+    theme: { ru: "Зимняя сказка", kk: "Қыс ертегісі" },
+    description: { 
+      ru: "Приглашение в холодных тонах с снежинками и зимними мотивами",
+      kk: "Қар ұшқындары мен қыс мотивтері бар салқын түстердегі шақыру"
+    },
+    color: "from-blue-500/20 to-cyan-500/20",
+    borderColor: "border-blue-500/30"
+  },
+  {
+    id: 6,
+    slug: null, // No demo page
+    names: { ru: "Жанна & Бауыржан", kk: "Жанна & Бауыржан" },
+    date: "01.06.2025",
+    location: { ru: "Атырау", kk: "Атырау" },
+    theme: { ru: "Летняя свежесть", kk: "Жазғы сергектік" },
+    description: { 
+      ru: "Яркое приглашение с зелеными акцентами и природными элементами",
+      kk: "Жасыл акценттері мен табиғи элементтері бар жарқын шақыру"
+    },
+    color: "from-green-500/20 to-lime-500/20",
+    borderColor: "border-green-500/30"
+  }
+];
+
+export default function WeddingExamples() {
+  const { t, language } = useLanguage();
+
+  return (
+    <section className="py-20 bg-gradient-to-b from-background to-accent/10">
+      <div className="container">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+            <Heart className="w-4 h-4" />
+            {t('examples.badge')}
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+            {t('examples.title')}
+          </h2>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            {t('examples.subtitle')}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+          {examples.map((example) => (
+            example.slug ? (
+              <a key={example.id} href={`/${example.slug}`} target="_blank" rel="noopener noreferrer">
+                <Card 
+                  className={`group hover:shadow-xl transition-all duration-300 border-2 ${example.borderColor} bg-gradient-to-br ${example.color} hover:scale-105 cursor-pointer`}
+                >
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold mb-2 font-['Playfair_Display']">
+                      {example.names[language]}
+                    </h3>
+                    <Badge variant="secondary" className="mb-2">
+                      {example.theme[language]}
+                    </Badge>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                  {example.description[language]}
+                </p>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    <span>{example.date}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="w-4 h-4" />
+                    <span>{example.location[language]}</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Heart className="w-3 h-3 fill-primary text-primary" />
+                    <span>{t('examples.viewExample')}</span>
+                  </div>
+                </div>
+              </CardContent>
+                </Card>
+              </a>
+            ) : (
+              <Card 
+                key={example.id}
+                className={`group hover:shadow-xl transition-all duration-300 border-2 ${example.borderColor} bg-gradient-to-br ${example.color}`}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold mb-2 font-['Playfair_Display']">
+                        {example.names[language]}
+                      </h3>
+                      <Badge variant="secondary" className="mb-2">
+                        {example.theme[language]}
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                    {example.description[language]}
+                  </p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="w-4 h-4" />
+                      <span>{example.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="w-4 h-4" />
+                      <span>{example.location[language]}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          ))}
+        </div>
+
+        <div className="text-center mt-12">
+          <p className="text-muted-foreground">
+            {t('examples.cta')}
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+

@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <link rel="icon" type="image/png" href="%VITE_APP_LOGO%" />
+    <link rel="apple-touch-icon" href="%VITE_APP_LOGO%" />
+    <title>%VITE_APP_TITLE%</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Создайте красивое онлайн-приглашение на свадьбу за 2 минуты. RSVP, wishlist, пожелания гостей, премиум шаблоны и двуязычность (русский/казахский)." />
+    <meta name="keywords" content="свадьба, приглашение на свадьбу, онлайн приглашение, RSVP, wishlist, казахская свадьба, той, күйеу той, қыз ұзату, беташар" />
+    <meta name="author" content="BookMe.kz" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bookme.kz/" />
+    <meta property="og:title" content="%VITE_APP_TITLE% - Создайте онлайн-приглашение на свадьбу" />
+    <meta property="og:description" content="Красивые шаблоны, RSVP, wishlist, пожелания гостей и двуязычность — всё в одном месте." />
+    <meta property="og:image" content="%VITE_APP_LOGO%" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://bookme.kz/" />
+    <meta property="twitter:title" content="%VITE_APP_TITLE% - Создайте онлайн-приглашение на свадьбу" />
+    <meta property="twitter:description" content="Красивые шаблоны, RSVP, wishlist, пожелания гостей и двуязычность — всё в одном месте." />
+    <meta property="twitter:image" content="%VITE_APP_LOGO%" />
+    <!-- Google Fonts for wedding theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Inter:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Cinzel:wght@400;500;600;700&family=Great+Vibes&family=Dancing+Script:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Raleway:wght@400;500;600;700&family=Open+Sans:wght@400;500;600;700&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Marck+Script&family=Bad+Script&family=Caveat:wght@400;500;600;700&family=Pacifico&family=Amatic+SC:wght@400;700&family=Comfortaa:wght@300;400;500;600;700&family=Jost:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Umami Analytics -->
+    <script
+      defer
+      src="%VITE_ANALYTICS_ENDPOINT%/umami"
+      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+    
+    <!-- Yandex.Metrica counter -->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){
+            m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+            m[i].l=1*new Date();
+            for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+            k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+        })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=105574858', 'ym');
+
+        ym(105574858, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", accurateTrackBounce:true, trackLinks:true});
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/105574858" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrica counter -->
+    
+    <!-- Smart Form Protection System -->
+    <script>
+/**
+ * Система защиты полей формы от перезаписи React
+ * Предотвращает потерю пользовательского ввода при навигации между страницами
+ */
+(function() {
+  'use strict';
+  
+  const PROTECTED_FIELDS = [
+    '#title', 
+    '#titleKz', 
+    '#description', 
+    '#descriptionKz', 
+    '#location', 
+    '#locationKz', 
+    '#mapUrl', 
+    '#slug'
+  ];
+  
+  const protectFormFields = () => {
+    // Проверяем, что мы на странице редактирования
+    if (!window.location.pathname.includes('/edit/')) {
+      return;
+    }
+    
+    let protectedCount = 0;
+    
+    PROTECTED_FIELDS.forEach(selector => {
+      const field = document.querySelector(selector);
+      
+      // Защищаем только новые поля
+      if (field && !field.dataset.protected) {
+        setupFieldProtection(field, selector);
+        protectedCount++;
+      }
+    });
+    
+    if (protectedCount > 0) {
+      console.log(`🛡️ Защищено ${protectedCount} полей от перезаписи React`);
+    }
+  };
+  
+  const setupFieldProtection = (field, selector) => {
+    // Помечаем поле как защищенное
+    field.dataset.protected = 'true';
+    
+    // Запоминаем изначальное значение
+    if (!field.dataset.originalValue) {
+      field.dataset.originalValue = field.value;
+    }
+    
+    let userChanged = false;
+    
+    // Отслеживаем изменения пользователя
+    const handleUserInput = () => {
+      userChanged = true;
+      field.dataset.userValue = field.value;
+      
+      // Сохраняем в sessionStorage для дополнительной защиты
+      const backupKey = `field-backup-${selector.substring(1)}`;
+      sessionStorage.setItem(backupKey, field.value);
+      
+      console.log(`📝 Пользователь изменил ${selector.substring(1)}:`, 
+        field.value.substring(0, 50) + (field.value.length > 50 ? '...' : ''));
+    };
+    
+    field.addEventListener('input', handleUserInput);
+    field.addEventListener('change', handleUserInput);
+    
+    // Наблюдаем за попытками React изменить поле
+    const observer = new MutationObserver(() => {
+      if (userChanged && field.dataset.userValue && field.value !== field.dataset.userValue) {
+        console.log(`🛡️ Защищаю поле ${selector.substring(1)} от перезаписи React`);
+        field.value = field.dataset.userValue;
+      }
+    });
+    
+    observer.observe(field, { 
+      attributes: true, 
+      attributeFilter: ['value'] 
+    });
+    
+    // Дополнительная защита через периодическую проверку
+    const protectionInterval = setInterval(() => {
+      if (userChanged && field.dataset.userValue && field.value !== field.dataset.userValue) {
+        field.value = field.dataset.userValue;
+      }
+      
+      // Останавливаем интервал если элемент удален из DOM
+      if (!document.contains(field)) {
+        clearInterval(protectionInterval);
+        observer.disconnect();
+      }
+    }, 100);
+    
+    // Восстанавливаем значение из sessionStorage при инициализации
+    const backupKey = `field-backup-${selector.substring(1)}`;
+    const savedValue = sessionStorage.getItem(backupKey);
+    if (savedValue && savedValue !== field.value) {
+      field.value = savedValue;
+      field.dataset.userValue = savedValue;
+      userChanged = true;
+      console.log(`🔄 Восстановлено значение поля ${selector.substring(1)} из backup`);
+    }
+  };
+  
+  // Очистка backup при успешном сохранении формы
+  const clearBackupOnSave = () => {
+    const saveButton = document.querySelector('button[type="submit"]');
+    if (saveButton) {
+      saveButton.addEventListener('click', () => {
+        // Очищаем backup через 3 секунды после нажатия (время на обработку)
+        setTimeout(() => {
+          PROTECTED_FIELDS.forEach(selector => {
+            const backupKey = `field-backup-${selector.substring(1)}`;
+            sessionStorage.removeItem(backupKey);
+          });
+          console.log('🧹 Очищен backup после сохранения формы');
+        }, 3000);
+      });
+    }
+  };
+  
+  // Инициализация системы защиты
+  const initProtectionSystem = () => {
+    protectFormFields();
+    clearBackupOnSave();
+  };
+  
+  // Запускаем защиту когда DOM готов
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProtectionSystem);
+  } else {
+    initProtectionSystem();
+  }
+  
+  // Переактивируем защиту при переходах между страницами (для SPA)
+  let lastPathname = window.location.pathname;
+  const navigationWatcher = setInterval(() => {
+    if (window.location.pathname !== lastPathname) {
+      lastPathname = window.location.pathname;
+      setTimeout(initProtectionSystem, 500);
+    }
+  }, 100);
+  
+  // Защищаем при возврате из других вкладок
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && window.location.pathname.includes('/edit/')) {
+      setTimeout(initProtectionSystem, 100);
+    }
+  });
+  
+  // Отладочная информация
+  console.log('🚀 Система защиты полей формы инициализирована');
+  
+  // Экспортируем для возможности управления извне
+  window.FormProtection = {
+    protect: protectFormFields,
+    init: initProtectionSystem,
+    fields: PROTECTED_FIELDS
+  };
+  
+})();
+    </script>
+  </body>
+
+</html>

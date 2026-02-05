@@ -1,0 +1,1 @@
+ALTER TABLE `weddings` ADD `customBackgroundUrl` varchar(500);

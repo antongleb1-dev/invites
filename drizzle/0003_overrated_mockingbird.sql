@@ -1,0 +1,1 @@
+ALTER TABLE `weddings` ADD `buttonTextColor` varchar(50);

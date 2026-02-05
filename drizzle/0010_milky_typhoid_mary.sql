@@ -1,0 +1,1 @@
+ALTER TABLE `weddings` ADD `photoShape` varchar(50) DEFAULT 'square';

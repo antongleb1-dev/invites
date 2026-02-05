@@ -1,0 +1,1 @@
+ALTER TABLE `weddings` ADD `showHeart` boolean DEFAULT true;
