@@ -1,0 +1,75 @@
+name: invites_ai
+description: AI-powered invitation generator for iOS and Android
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+    
+  # UI & Design
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.3.1
+  lottie: ^3.1.2
+  
+  # State Management
+  provider: ^6.1.2
+  flutter_riverpod: ^2.5.1
+  
+  # Navigation
+  go_router: ^14.2.7
+  
+  # Network & API
+  dio: ^5.4.3+1
+  http: ^1.2.2
+  
+  # Local Storage
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # Authentication
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.2
+  
+  # In-App Purchase
+  in_app_purchase: ^3.2.0
+  in_app_purchase_storekit: ^0.3.18+2
+  in_app_purchase_android: ^0.3.6+11
+  
+  # Utilities
+  intl: ^0.20.2
+  url_launcher: ^6.3.0
+  share_plus: ^10.0.2
+  image_picker: ^1.1.2
+  path_provider: ^2.1.4
+  uuid: ^4.5.1
+  flutter_dotenv: ^5.1.0
+  webview_flutter: ^4.8.0
+  
+  # Animations
+  flutter_animate: ^4.5.0
+  animations: ^2.0.11
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.12
+  hive_generator: ^2.0.1
+
+flutter:
+  uses-material-design: true
+  generate: true
