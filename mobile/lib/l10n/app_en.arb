@@ -34,7 +34,7 @@
   "step2Desc": "AI creates a beautiful personalized invitation",
   "step3": "Share with guests",
   "step3Desc": "Send the link to your guests",
-  "welcomeMessage": "Hi! I'm your AI designer. I'll help you create a beautiful online invitation in minutes.\n\nJust describe your event — wedding, birthday, corporate party — and I'll generate a unique invitation website with RSVP, wishes and gift selection.\n\nChoose an event type below or describe your celebration:",
+  "welcomeMessage": "Hi! ✨\n\nI'll create a premium-level online invitation for you — like from a top design studio.\n\nTell me:\n\n1. What's the event?\nWedding, birthday, anniversary, corporate party...\n\n2. When and where?\nDate, time and venue\n\n3. What vibe suits you best?\n• 🖤 Minimal luxe — clean, elegant, whitespace\n• 💫 Editorial — like a fashion magazine cover\n• 🌿 Organic — soft tones, natural textures\n• ✨ Modern classic — tradition + modernity\n• 🎨 Bold — bright, unconventional, memorable\n\nYou can upload photos and add a YouTube music link right away — I'll use them as the design foundation! 📸🎵",
   "aiDesigner": "AI Designer",
   "aiDesignerSubtitle": "Create invitations with AI",
   "eventWedding": "💒 Wedding",
@@ -49,5 +49,167 @@
   "errorNotEnoughTokens": "Not enough tokens. Please purchase more to continue.",
   "errorGeneral": "Something went wrong. Please try again.",
   "chatCleared": "Chat cleared",
-  "newChat": "New Chat"
+  "newChat": "New Chat",
+
+  "saving": "Saving...",
+  "saved": "Saved",
+  "creating": "Creating...",
+
+  "photoFromGallery": "Photo from Gallery",
+  "takePhoto": "Take Photo",
+  "videoOption": "Video",
+  "attachedFiles": "📎 Attached {count} file(s)",
+  "@attachedFiles": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "invitation": "Invitation",
+  "loadedForEditing": "Loaded \"{title}\" for editing. You can continue making changes — just describe what you want to update.",
+  "@loadedForEditing": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "couldNotLoadInvitation": "Could not load invitation. Please try again.",
+  "errorAuth": "Please login to generate invitations.",
+  "errorEditLimit": "You have reached your edit limit. Please purchase a package to continue.",
+  "errorForbidden": "Access denied. Please check your account.",
+  "errorTimeout": "Request timed out. AI generation can take up to 2 minutes — please try again.",
+
+  "loading": "Loading...",
+  "error": "Error",
+  "invitationNotFound": "Invitation not found",
+  "goBack": "Go Back",
+  "untitled": "Untitled",
+  "delete": "Delete",
+
+  "tabInfo": "Info",
+  "tabRsvp": "RSVP",
+  "tabWishes": "Wishes",
+  "tabWishlist": "Wishlist",
+
+  "published": "Published",
+  "draft": "Draft",
+  "statusLiveDescription": "Your invitation is live and accessible",
+  "statusDraftDescription": "Publish to share with guests",
+
+  "invitationLink": "Invitation Link",
+  "myInvitation": "My Invitation",
+  "linkCopied": "Link copied!",
+  "publishToActivate": "Publish your invitation to activate the link",
+
+  "aiPackageLabel": "AI Package: {name}",
+  "@aiPackageLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noAiPackage": "No AI Package",
+  "editsRemaining": "{count} edits remaining",
+  "@editsRemaining": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "purchaseForEdits": "Purchase a package for AI edits",
+  "buy": "Buy",
+
+  "titleLabel": "Title",
+  "urlSlug": "URL slug",
+  "saveChanges": "Save Changes",
+  "savedSuccess": "Saved!",
+  "errorWithMessage": "Error: {message}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+
+  "createdDate": "Created",
+  "lastModified": "Last modified",
+  "notAvailable": "N/A",
+
+  "editInvitation": "Edit Invitation",
+  "viewInvitation": "View Invitation",
+  "publishButton": "Publish",
+
+  "noRsvpYet": "No RSVP responses yet",
+  "rsvpEmptyDescription": "Guests will appear here when they confirm attendance",
+  "unknownGuest": "Unknown",
+  "guestCount": "{count} guests",
+  "@guestCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "attending": "Attending",
+  "attendingPlusOne": "Attending +1",
+  "attendingWithSpouse": "Attending with spouse",
+  "notAttending": "Not attending",
+
+  "noWishesYet": "No wishes yet",
+  "wishesEmptyDescription": "Guest wishes will appear here",
+  "guestLabel": "Guest",
+  "approvedStatus": "Approved",
+  "pendingStatus": "Pending",
+  "reject": "Reject",
+  "approve": "Approve",
+
+  "noGiftsYet": "No gifts yet",
+  "giftsEmptyDescription": "Add gifts to your wishlist on the website",
+  "giftLabel": "Gift",
+  "reserved": "Reserved",
+  "reservedByLabel": "by {name}",
+  "@reservedByLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openLink": "Open link",
+
+  "invitationPublished": "Invitation published!",
+  "errorCreatingPayment": "Error creating payment",
+
+  "deleteInvitation": "Delete Invitation",
+  "deleteConfirmation": "Are you sure you want to delete this invitation? This action cannot be undone.",
+  "cancel": "Cancel",
+  "invitationDeleted": "Invitation deleted",
+  "failedToDelete": "Failed to delete",
+
+  "guestUser": "Guest",
+  "noInvitationsYet": "No invitations yet",
+  "createFirstInvitation": "Create your first AI invitation!",
+  "errorLoadingInvitations": "Error loading invitations",
+
+  "choosePackageSubtitle": "Choose a package to create AI invitations",
+  "aiPackagesTitle": "AI Packages",
+  "needMoreEdits": "Need more edits?",
+  "howPackagesWork": "How packages work",
+  "packagesStep1": "Choose a package based on your needs",
+  "packagesStep2": "Each AI edit refines your invitation design",
+  "packagesStep3": "Your first message is free — try it now!",
+  "createInvitationFirst": "Please create an invitation first, then purchase a package.",
+  "popular": "POPULAR",
+  "add": "Add",
+  "editsUnit": "edits",
+
+  "mobileView": "Mobile",
+  "tabletView": "Tablet",
+  "desktopView": "Desktop",
+  "editButton": "Edit",
+  "shareSubject": "My Invitation — Invites AI",
+
+  "noInvitationYet": "No invitation yet",
+  "goBackToChat": "Go back to chat and describe your event to generate an invitation.",
+
+  "purchaseSuccess": "Purchase successful!",
+  "purchasePending": "Purchase is being processed...",
+  "purchaseError": "Purchase failed. Please try again.",
+  "restorePurchases": "Restore Purchases",
+  "restoringPurchases": "Restoring purchases...",
+  "purchasesRestored": "Purchases restored successfully!",
+  "noPurchasesToRestore": "No purchases to restore.",
+  "priceNotAvailable": "Price loading..."
 }

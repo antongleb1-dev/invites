@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "919678012025",
+    "project_id": "bookme-50db1",
+    "storage_bucket": "bookme-50db1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919678012025:android:56064c8135609fca65a2a8",
+        "android_client_info": {
+          "package_name": "kz.invites.ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "919678012025-4bhdurmknh0e7g12gf1ftldpcbodr90v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kz.invites.ai",
+            "certificate_hash": "db42e3b767d9449912e5b0abc88391171c6d82e1"
+          }
+        },
+        {
+          "client_id": "919678012025-rk1rmvups7fe5fgc48crstpl26623tsi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqTPDMZEmjqIReEKohjpRbXt0mYe3RjKk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "919678012025-rk1rmvups7fe5fgc48crstpl26623tsi.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "919678012025-j6cer4ujff45kodlirha889bsri3klmu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "kz.invites.ai"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

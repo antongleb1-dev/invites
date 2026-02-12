@@ -9,6 +9,7 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/preview/presentation/screens/preview_screen.dart';
 import '../../features/tokens/presentation/screens/buy_tokens_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/manage/presentation/screens/manage_invitation_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -33,6 +34,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      // Manage invitation (outside shell — no bottom nav)
+      GoRoute(
+        path: '/manage/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+          return ManageInvitationScreen(invitationId: id);
+        },
       ),
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),

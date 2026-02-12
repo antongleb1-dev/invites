@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
-import '../../../../core/providers/tokens_provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/models/chat_message.dart';
 import '../../providers/chat_provider.dart';
@@ -43,11 +43,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       l10n.eventAnniversary,
       l10n.eventNewYear,
     ];
-    
+
     ref.read(chatProvider.notifier).initializeChat(
-      l10n.welcomeMessage,
-      quickActions,
-    );
+          l10n.welcomeMessage,
+          quickActions,
+        );
   }
 
   @override
@@ -68,14 +68,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  void _onSendMessage(String text) async {
+  void _onSendMessage(String text, {List<XFile>? files}) async {
     if (_isGenerating) return;
-    
+
     setState(() => _isGenerating = true);
     _scrollToBottom();
 
     final locale = Localizations.localeOf(context).languageCode;
-    await ref.read(chatProvider.notifier).sendMessage(text, language: locale);
+    await ref.read(chatProvider.notifier).sendMessage(
+      text,
+      language: locale,
+      files: files,
+    );
 
     setState(() => _isGenerating = false);
     _scrollToBottom();
@@ -87,11 +91,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _onSendMessage(cleanAction.isNotEmpty ? cleanAction : action);
   }
 
+  void _startNewChat() {
+    ref.read(chatProvider.notifier).clearChat();
+    _initializeChat();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final messages = ref.watch(chatProvider);
-    final tokenBalance = ref.watch(tokenBalanceNotifierProvider);
+    final generatedHtml = ref.watch(generatedHtmlProvider);
+    final savedSlug = ref.watch(savedSlugProvider);
+    final saveStatus = ref.watch(saveStatusProvider);
 
     // Scroll to bottom when messages change
     if (messages.isNotEmpty) {
@@ -108,22 +119,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Column(
             children: [
               // Header
-              _buildHeader(l10n, tokenBalance),
-              
-              // Agent Mode Selector
+              _buildHeader(l10n, generatedHtml != null),
+
+              // Agent Mode Selector (AI Provider)
               const AgentModeSelector(),
-              
+
               // Chat Messages
               Expanded(
                 child: messages.isEmpty
                     ? _buildEmptyState(l10n)
                     : _buildChatList(messages, l10n),
               ),
-              
+
+              // Preview banner when invitation is generated
+              if (generatedHtml != null) _buildPreviewBanner(l10n, savedSlug),
+
               // Chat Input
               ChatInput(
                 onSend: _onSendMessage,
-                hintText: l10n.promptPlaceholder,
+                hintText: _isGenerating
+                    ? l10n.generatingInvitation
+                    : l10n.promptPlaceholder,
                 enabled: !_isGenerating,
               ),
             ],
@@ -133,7 +149,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildHeader(AppLocalizations l10n, int tokenBalance) {
+  Widget _buildHeader(AppLocalizations l10n, bool hasInvitation) {
+    final saveStatus = ref.watch(saveStatusProvider);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
       child: Row(
@@ -156,41 +174,102 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   l10n.aiDesigner,
                   style: AppTypography.headlineSmall,
                 ),
-                Text(
-                  l10n.aiDesignerSubtitle,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textMuted,
+                // Show save status or subtitle
+                if (saveStatus == SaveStatus.saving)
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 10, height: 10,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        l10n.saving,
+                        style: AppTypography.bodySmall.copyWith(color: AppColors.textMuted),
+                      ),
+                    ],
+                  )
+                else if (saveStatus == SaveStatus.saved)
+                  Row(
+                    children: [
+                      Icon(Icons.check_circle, size: 12, color: Colors.green),
+                      const SizedBox(width: 4),
+                      Text(
+                        l10n.saved,
+                        style: AppTypography.bodySmall.copyWith(color: Colors.green),
+                      ),
+                    ],
+                  )
+                else
+                  Text(
+                    l10n.aiDesignerSubtitle,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.textMuted,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
-          // Token badge
-          GestureDetector(
-            onTap: () => context.go('/tokens'),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.token, color: AppColors.primary, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$tokenBalance',
-                    style: AppTypography.labelMedium.copyWith(color: AppColors.primary),
-                  ),
-                ],
-              ),
-            ),
+          // New chat button
+          IconButton(
+            onPressed: _startNewChat,
+            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+            tooltip: l10n.newChat,
           ),
         ],
       ),
     ).animate().fadeIn(duration: 300.ms);
+  }
+
+  Widget _buildPreviewBanner(AppLocalizations l10n, String? slug) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go('/preview'),
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.visibility, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.previewInvitation,
+                        style: AppTypography.labelMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (slug != null)
+                        Text(
+                          'invites.kz/$slug',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.2, end: 0);
   }
 
   Widget _buildEmptyState(AppLocalizations l10n) {
@@ -239,8 +318,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         final firstBotWithActions = messages.indexWhere(
           (m) => m.type == MessageType.bot && m.quickActions != null,
         );
-        
-        if (firstBotWithActions >= 0 && index == firstBotWithActions + 1 && messages.length == 1) {
+
+        if (firstBotWithActions >= 0 &&
+            index == firstBotWithActions + 1 &&
+            messages.length == 1) {
           // Show quick actions
           return QuickActionChips(
             actions: messages[firstBotWithActions].quickActions!,
@@ -249,19 +330,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
 
         // Adjust index if quick actions were shown
-        final msgIndex = (firstBotWithActions >= 0 && 
-            messages.length == 1 && 
-            index > firstBotWithActions)
+        final msgIndex = (firstBotWithActions >= 0 &&
+                messages.length == 1 &&
+                index > firstBotWithActions)
             ? index - 1
             : index;
-        
+
         if (msgIndex >= messages.length) return const SizedBox.shrink();
 
         final message = messages[msgIndex];
         return ChatBubble(
           message: message,
-          onPreviewTap: message.invitationId != null
-              ? () => context.go('/preview', extra: message.invitationId)
+          onPreviewTap: message.html != null
+              ? () => context.go('/preview')
               : null,
         ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0);
       },

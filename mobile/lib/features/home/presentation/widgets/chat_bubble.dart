@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../data/models/chat_message.dart';
 
 class ChatBubble extends StatelessWidget {
@@ -22,7 +23,7 @@ class ChatBubble extends StatelessWidget {
     }
 
     final isBot = message.type == MessageType.bot;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
       child: Row(
@@ -35,7 +36,8 @@ class ChatBubble extends StatelessWidget {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+              crossAxisAlignment:
+                  isBot ? CrossAxisAlignment.start : CrossAxisAlignment.end,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -63,10 +65,21 @@ class ChatBubble extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Preview button if invitation was generated
-                if (message.invitationId != null) ...[
+                // Preview button if invitation HTML was generated
+                if (message.html != null && onPreviewTap != null) ...[
                   const SizedBox(height: 8),
                   _buildPreviewButton(context),
+                ],
+                // Show invitation URL if available
+                if (message.slug != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'invites.kz/${message.slug}',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -109,9 +122,11 @@ class ChatBubble extends StatelessWidget {
             const Icon(Icons.visibility, color: AppColors.primary, size: 18),
             const SizedBox(width: 8),
             Text(
-              'Preview',
+              AppLocalizations.of(context)?.viewInvitation ?? 'View Invitation',
               style: AppTypography.labelMedium.copyWith(color: AppColors.primary),
             ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_forward_ios, color: AppColors.primary, size: 12),
           ],
         ),
       ),
@@ -160,6 +175,13 @@ class ChatBubble extends StatelessWidget {
                 _buildDot(1),
                 const SizedBox(width: 4),
                 _buildDot(2),
+                const SizedBox(width: 12),
+                Text(
+                  AppLocalizations.of(context)?.creating ?? 'Creating...',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
               ],
             ),
           ),
@@ -183,5 +205,3 @@ class ChatBubble extends StatelessWidget {
         .fadeOut(duration: 400.ms);
   }
 }
-
-

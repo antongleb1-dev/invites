@@ -16,7 +16,7 @@ class MyApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Invites AI',
+      title: 'Invites AI', // App name — not localized
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       locale: locale,
