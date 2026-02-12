@@ -259,23 +259,39 @@ function shouldGenerateHtml(message: string, messageCount: number): boolean {
  * Extract HTML from AI response
  */
 function extractHtml(response: string): string | null {
-  // Try to find HTML document
-  const htmlMatch = response.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
-  if (htmlMatch) {
-    return htmlMatch[0];
+  // Log for debugging
+  console.log('[AI] Response length:', response.length);
+  console.log('[AI] Response preview:', response.substring(0, 200));
+  
+  // Try markdown code block FIRST (Claude 4.6 often uses this)
+  // Use greedy match to capture full HTML
+  const codeBlockMatch = response.match(/```(?:html)?\s*(<!DOCTYPE[\s\S]*<\/html>)\s*```/i);
+  if (codeBlockMatch) {
+    console.log('[AI] Extracted from markdown code block');
+    return codeBlockMatch[1].trim();
   }
   
-  // Try markdown code block
-  const codeBlockMatch = response.match(/```(?:html)?\s*(<!DOCTYPE[\s\S]*?<\/html>)\s*```/i);
-  if (codeBlockMatch) {
-    return codeBlockMatch[1];
+  // Try to find HTML document directly
+  const htmlMatch = response.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
+  if (htmlMatch) {
+    console.log('[AI] Extracted direct HTML');
+    return htmlMatch[0];
   }
   
   // Check if response starts with DOCTYPE
   if (response.trim().toLowerCase().startsWith('<!doctype')) {
+    console.log('[AI] Response starts with DOCTYPE');
     return response.trim();
   }
   
+  // Last resort: try to find <html> tags without DOCTYPE
+  const htmlTagMatch = response.match(/<html[\s\S]*<\/html>/i);
+  if (htmlTagMatch) {
+    console.log('[AI] Extracted <html> tags');
+    return '<!DOCTYPE html>\n' + htmlTagMatch[0];
+  }
+  
+  console.log('[AI] No HTML found in response');
   return null;
 }
 

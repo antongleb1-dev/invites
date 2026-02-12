@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -35,6 +35,8 @@ import AdminPanel from "./pages/AdminPanel";
 import ClassicEditor from "./pages/ClassicEditor";
 import Onboarding from "./pages/Onboarding";
 import JivoChat from "./components/JivoChat";
+import { RussiaWarningModal } from "./components/RussiaWarningModal";
+import { useGeoLocation, isRussiaWarningDismissed, dismissRussiaWarning } from "./hooks/useGeoLocation";
 
 // Redirect component for old/invalid URLs
 function RedirectToHome() {
@@ -121,6 +123,32 @@ function Router() {
 //   to keep consistent foreground/background color across components
 // - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
+// Component to handle Russia warning on first load
+function RussiaWarningHandler() {
+  const { isRussia, isLoading } = useGeoLocation();
+  const [showWarning, setShowWarning] = useState(false);
+
+  useEffect(() => {
+    // Show warning only if user is from Russia and hasn't dismissed it this session
+    if (!isLoading && isRussia && !isRussiaWarningDismissed()) {
+      setShowWarning(true);
+    }
+  }, [isRussia, isLoading]);
+
+  const handleClose = () => {
+    dismissRussiaWarning();
+    setShowWarning(false);
+  };
+
+  return (
+    <RussiaWarningModal 
+      open={showWarning} 
+      onClose={handleClose}
+      isAIWarning={false}
+    />
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -133,6 +161,7 @@ function App() {
             <Toaster />
             <Router />
             <JivoChat />
+            <RussiaWarningHandler />
           </TooltipProvider>
         </ThemeProvider>
       </AuthProvider>

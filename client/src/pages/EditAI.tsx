@@ -29,6 +29,8 @@ import { Link, useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AIPackageSelector, AIEditsExhaustedDialog, AIEditsCounter } from "@/components/AIPackageSelector";
+import { RussiaWarningModal } from "@/components/RussiaWarningModal";
+import { useGeoLocation } from "@/hooks/useGeoLocation";
 
 type ViewMode = "mobile" | "tablet" | "desktop";
 type AIProvider = "claude" | "openai";
@@ -80,6 +82,10 @@ export default function EditAI() {
   // AI Package state
   const [showPackageSelector, setShowPackageSelector] = useState(false);
   const [showEditsExhausted, setShowEditsExhausted] = useState(false);
+  
+  // Russia warning for AI generation
+  const { isRussia } = useGeoLocation();
+  const [showRussiaWarning, setShowRussiaWarning] = useState(false);
   
   // Refs
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -226,6 +232,14 @@ export default function EditAI() {
     
     if (!isAuthenticated) {
       toast.error("Войдите в систему");
+      return;
+    }
+
+    // Show warning for Russian users about payment limitations
+    console.log('[EditAI] isRussia check:', isRussia);
+    if (isRussia) {
+      console.log('[EditAI] Blocking - showing Russia warning');
+      setShowRussiaWarning(true);
       return;
     }
 
@@ -757,6 +771,13 @@ export default function EditAI() {
           editsLimit={packageStatus.editsLimit}
         />
       )}
+      
+      {/* Russia Warning Modal */}
+      <RussiaWarningModal
+        open={showRussiaWarning}
+        onClose={() => setShowRussiaWarning(false)}
+        isAIWarning={true}
+      />
     </div>
   );
 }

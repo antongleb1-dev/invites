@@ -9,9 +9,75 @@ import { TRPCError } from "@trpc/server";
 import { createPayment } from "./freedompay";
   import { processMessage, getAvailableProviders, getDefaultProvider, getWelcomeMessage, type AIProvider } from "./ai/providers";
 
+// Helper to get client IP from request
+function getClientIP(req: any): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || req.connection?.remoteAddress || '';
+}
+
+// Check if IP is from Russia using server-side geolocation
+async function checkIfRussianIP(ip: string): Promise<{ isRussia: boolean; country: string | null }> {
+  // Skip for local IPs
+  if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+    return { isRussia: false, country: 'Local' };
+  }
+
+  // Try multiple geolocation APIs
+  const apis = [
+    {
+      url: `http://ip-api.com/json/${ip}?fields=status,country,countryCode`,
+      parse: (data: any) => data.status === 'success' ? { country: data.country, code: data.countryCode } : null
+    },
+    {
+      url: `https://ipwho.is/${ip}`,
+      parse: (data: any) => data.success ? { country: data.country, code: data.country_code } : null
+    },
+  ];
+
+  for (const api of apis) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3000);
+      
+      const response = await fetch(api.url, { signal: controller.signal });
+      clearTimeout(timeout);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const result = api.parse(data);
+        if (result) {
+          console.log(`[GeoIP] ${ip} -> ${result.code} (${result.country})`);
+          return { isRussia: result.code === 'RU', country: result.country };
+        }
+      }
+    } catch (e) {
+      // Try next API
+    }
+  }
+
+  console.log(`[GeoIP] Failed to detect location for ${ip}`);
+  return { isRussia: false, country: null };
+}
+
 export const appRouter = router({
   system: systemRouter,
   sitemap: sitemapRouter,
+
+  // Geo location check
+  geo: router({
+    check: publicProcedure.query(async ({ ctx }) => {
+      const ip = getClientIP(ctx.req);
+      const result = await checkIfRussianIP(ip);
+      return {
+        ip: ip.substring(0, 10) + '***', // Partially mask IP for privacy
+        isRussia: result.isRussia,
+        country: result.country,
+      };
+    }),
+  }),
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

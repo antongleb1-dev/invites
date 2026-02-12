@@ -36,6 +36,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { AIPackageSelector, AIEditsExhaustedDialog, AIEditsCounter } from "@/components/AIPackageSelector";
 import { AuthDialog } from "@/components/AuthDialog";
+import { RussiaWarningModal } from "@/components/RussiaWarningModal";
+import { useGeoLocation } from "@/hooks/useGeoLocation";
 
 type ViewMode = "mobile" | "tablet" | "desktop";
 type AIProvider = "claude" | "openai";
@@ -104,6 +106,13 @@ export default function CreateAI() {
   // Auth dialog
   const [showAuthRequired, setShowAuthRequired] = useState(false);
   const pendingMessageRef = useRef<string | null>(null);
+  
+  // Russia warning for AI generation
+  const { isRussia, countryCode, isLoading: geoLoading } = useGeoLocation();
+  const [showRussiaWarning, setShowRussiaWarning] = useState(false);
+  
+  // DEBUG: временный индикатор геолокации (удалить после отладки)
+  const DEBUG_GEO = true;
   
   // Abort controller for cancelling requests
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -340,6 +349,14 @@ export default function CreateAI() {
     if (!isAuthenticated) {
       pendingMessageRef.current = chatInput;
       setShowAuthRequired(true);
+      return;
+    }
+
+    // Show warning for Russian users about payment limitations
+    console.log('[CreateAI] isRussia check:', isRussia);
+    if (isRussia) {
+      console.log('[CreateAI] Blocking - showing Russia warning');
+      setShowRussiaWarning(true);
       return;
     }
 
@@ -1276,6 +1293,13 @@ ${uploadedFiles.map(f => {
         open={showAuthRequired}
         onOpenChange={setShowAuthRequired}
         onSuccess={handleAuthSuccess}
+      />
+      
+      {/* Russia Warning Modal */}
+      <RussiaWarningModal
+        open={showRussiaWarning}
+        onClose={() => setShowRussiaWarning(false)}
+        isAIWarning={true}
       />
     </div>
   );

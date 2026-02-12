@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Sparkles, ArrowRight, Loader2 } from "lucide-react";
-import { Link, useSearch } from "wouter";
+import { Link, useSearch, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 
 export default function AIPaymentSuccess() {
@@ -14,6 +14,8 @@ export default function AIPaymentSuccess() {
   
   const [activated, setActivated] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
+  const [, navigate] = useLocation();
 
   const activatePackageMutation = trpc.ai.activatePackage.useMutation();
   const addTopupMutation = trpc.ai.addTopupEdits.useMutation();
@@ -53,6 +55,24 @@ export default function AIPaymentSuccess() {
 
     activate();
   }, [weddingId, packageId, topupId]);
+
+  // Auto-redirect to dashboard after 5 seconds
+  useEffect(() => {
+    if (!activated) return;
+    
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          navigate("/dashboard");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(countdownInterval);
+  }, [activated, navigate]);
 
   const packages: Record<string, { name: string; edits: number }> = {
     start: { name: 'AI START', edits: 15 },
@@ -134,6 +154,10 @@ export default function AIPaymentSuccess() {
             <p className="text-sm text-muted-foreground mt-1">
               Теперь вы можете создавать и редактировать AI-приглашения
             </p>
+          </div>
+
+          <div className="text-center text-sm text-muted-foreground mb-4">
+            Автоматический переход через {countdown} сек...
           </div>
 
           <div className="space-y-3">
