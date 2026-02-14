@@ -465,6 +465,15 @@ export default function WeddingPage() {
     } else {
       aiHtml = aiHtml + formHandlerScript;
     }
+    
+    // Add base tag to make relative URLs work in iframe
+    const baseUrl = window.location.origin;
+    if (!aiHtml.includes('<base')) {
+      aiHtml = aiHtml.replace('<head>', `<head>\n<base href="${baseUrl}">`);
+    }
+    // Also replace any remaining relative /uploads/ URLs with absolute
+    aiHtml = aiHtml.replace(/src="\/uploads\//g, `src="${baseUrl}/uploads/`);
+    aiHtml = aiHtml.replace(/src='\/uploads\//g, `src='${baseUrl}/uploads/`);
 
     // Component to handle form submissions from iframe
     const AIInvitationWithForms = () => {

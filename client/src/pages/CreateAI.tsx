@@ -410,16 +410,17 @@ export default function CreateAI() {
       // Include uploaded files info in the context with absolute URLs
       const baseUrl = window.location.origin;
       const filesContext = uploadedFiles.length > 0 
-        ? `\n\n[ВАЖНО! Загруженные файлы - используй эти ТОЧНЫЕ URL в HTML:
+        ? `\n\n[⚠️ ЗАГРУЖЕННЫЕ ФАЙЛЫ - ИСПОЛЬЗУЙ ТОЧНО ЭТИ URL (копируй полностью!):
 ${uploadedFiles.map(f => {
   const absoluteUrl = f.url.startsWith('http') ? f.url : `${baseUrl}${f.url}`;
   if (f.type.startsWith('audio/')) {
-    return `- АУДИО "${f.name}": <audio src="${absoluteUrl}" autoplay loop controls></audio>`;
+    return `- АУДИО: ${absoluteUrl} (используй: <audio src="${absoluteUrl}" autoplay loop controls></audio>)`;
   } else if (f.type.startsWith('video/')) {
-    return `- ВИДЕО "${f.name}": <video src="${absoluteUrl}" autoplay loop muted playsinline></video>`;
+    return `- ВИДЕО: ${absoluteUrl} (используй: <video src="${absoluteUrl}" autoplay loop muted playsinline></video>)`;
   }
-  return `- ФОТО "${f.name}": <img src="${absoluteUrl}" />`;
-}).join('\n')}]`
+  return `- ФОТО: ${absoluteUrl} (используй: <img src="${absoluteUrl}" alt="фото">)`;
+}).join('\n')}
+⚠️ НЕ ИСПОЛЬЗУЙ имена файлов! Копируй URL целиком!]`
         : '';
       
       const messagesWithFiles = newMessages.map((m, i) => ({
@@ -880,7 +881,22 @@ ${uploadedFiles.map(f => {
               {generatedHtml ? (
                 <div className="bg-white rounded-lg shadow-2xl overflow-hidden">
                   <iframe
-                    srcDoc={generatedHtml}
+                    srcDoc={(() => {
+                      // Add base tag to make relative URLs work in iframe
+                      const baseUrl = window.location.origin;
+                      let html = generatedHtml;
+                      
+                      // Add <base> tag if not present
+                      if (!html.includes('<base')) {
+                        html = html.replace('<head>', `<head>\n<base href="${baseUrl}">`);
+                      }
+                      
+                      // Also replace any remaining relative /uploads/ URLs with absolute
+                      html = html.replace(/src="\/uploads\//g, `src="${baseUrl}/uploads/`);
+                      html = html.replace(/src='\/uploads\//g, `src='${baseUrl}/uploads/`);
+                      
+                      return html;
+                    })()}
                     className="w-full border-0"
                     style={{ 
                       height: viewMode === "mobile" ? "667px" : viewMode === "tablet" ? "1024px" : "800px",

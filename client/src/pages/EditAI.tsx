@@ -548,7 +548,22 @@ export default function EditAI() {
               {generatedHtml ? (
                 <div className="bg-white rounded-lg shadow-2xl overflow-hidden">
                   <iframe
-                    srcDoc={generatedHtml}
+                    srcDoc={(() => {
+                      // Add base tag to make relative URLs work in iframe
+                      const baseUrl = window.location.origin;
+                      let html = generatedHtml;
+                      
+                      // Add <base> tag if not present
+                      if (!html.includes('<base')) {
+                        html = html.replace('<head>', `<head>\n<base href="${baseUrl}">`);
+                      }
+                      
+                      // Also replace any remaining relative /uploads/ URLs with absolute
+                      html = html.replace(/src="\/uploads\//g, `src="${baseUrl}/uploads/`);
+                      html = html.replace(/src='\/uploads\//g, `src='${baseUrl}/uploads/`);
+                      
+                      return html;
+                    })()}
                     className="w-full border-0"
                     style={{ 
                       height: viewMode === "mobile" ? "667px" : viewMode === "tablet" ? "1024px" : "800px",
